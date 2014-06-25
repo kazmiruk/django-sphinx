@@ -653,10 +653,6 @@ class SphinxQuerySet(object):
         if SPHINX_MODELS_FIELDS:
             model_config = SPHINX_MODELS_FIELDS.get('%s.%s' % (instance._meta.app_label, instance._meta.object_name.lower()), {})
             index_name = model_config.get('index_name', None)
-
-            if isinstance(index_name, unicode):
-                index_name = index_name.encode('utf-8')
-
             fields_dict = model_config.get('fields', {})
             fields = fields_dict.keys()
             docs = [reduce(lambda x, y: x + y, ["%s " % getattr(instance, k) for k in fields_dict.get(f, [])], '') for f in fields]
@@ -669,8 +665,8 @@ class SphinxQuerySet(object):
         for index, doc in enumerate(docs):
             if (not (isinstance(doc, str)) and (not isinstance(doc, unicode))):
                 docs[index] = repr(doc)
-            if isinstance(docs[index], str):
-                docs[index] = docs[index].decode('utf-8')
+            if isinstance(docs[index], unicode):
+                docs[index] = docs[index].encode('utf-8')
 
         if isinstance(self._passages_opts, dict):
             opts = self._passages_opts
