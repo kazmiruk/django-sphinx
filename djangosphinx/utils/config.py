@@ -17,7 +17,7 @@ def _get_database_engine():
     elif engine.startswith('postgresql'):
         return 'pgsql'
 
-    sphinx_db_engine = getattr(settings, 'SPHINX_DB_ENGINE')
+    sphinx_db_engine = getattr(settings, 'SPHINX_DB_ENGINE', None)
 
     if sphinx_db_engine is not None:
         return sphinx_db_engine
