@@ -1,14 +1,14 @@
-from django.conf import settings
-from django.template import Template, Context
-
-from django.db import models
-from django.contrib.contenttypes.models import ContentType
-
 import os.path
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.template import Template, Context
 
 import djangosphinx.apis.current as sphinxapi
 
 __all__ = ('generate_config_for_model', 'generate_config_for_models')
+
 
 def _get_database_engine():
     engine = settings.DATABASES['default']['ENGINE'].split('.')[-1]
@@ -16,7 +16,14 @@ def _get_database_engine():
         return engine
     elif engine.startswith('postgresql'):
         return 'pgsql'
-    raise ValueError, "Only MySQL and PostgreSQL engines are supported by Sphinx."
+
+    sphinx_db_engine = getattr(settings, 'SPHINX_DB_ENGINE')
+
+    if sphinx_db_engine is not None:
+        return sphinx_db_engine
+
+    raise ValueError("Only MySQL and PostgreSQL engines are supported by Sphinx.")
+
 
 def _get_template(name):
     paths = (
@@ -33,7 +40,8 @@ def _get_template(name):
             return t
         finally:
             fp.close()
-    raise ValueError, "Template matching name does not exist: %s." % (name,)
+    raise ValueError("Template matching name does not exist: %s." % (name,))
+
 
 def _is_sourcable_field(field):
     # We can use float fields in 0.98
@@ -59,6 +67,7 @@ DEFAULT_SPHINX_PARAMS = {
     'data_path': '/var/data',
 }
 
+
 def get_index_context(index):
     params = DEFAULT_SPHINX_PARAMS
     params.update({
@@ -67,6 +76,7 @@ def get_index_context(index):
     })
 
     return params
+
 
 def get_source_context(tables, index, valid_fields):
     params = DEFAULT_SPHINX_PARAMS
@@ -80,6 +90,7 @@ def get_source_context(tables, index, valid_fields):
         'date_columns': [f[1] for f in valid_fields if issubclass(f[0], models.DateTimeField) or issubclass(f[0], models.DateField)],
         'float_columns': [f[1] for f in valid_fields if isinstance(f[0], models.FloatField) or isinstance(f[0], models.DecimalField)],
     })
+
     try:
         from django.contrib.gis.db.models import PointField
         params.update({
@@ -93,14 +104,16 @@ def get_source_context(tables, index, valid_fields):
         pass
     return params
 
-# Generate for single models
 
+# Generate for single models
 def generate_config_for_model(model_class, index=None, sphinx_params={}):
     """
     Generates a sample configuration including an index and source for
     the given model which includes all attributes and date fields.
     """
-    return generate_source_for_model(model_class, index, sphinx_params) + "\n\n" + generate_index_for_model(model_class, index, sphinx_params)
+    return generate_source_for_model(model_class, index, sphinx_params) + "\n\n" + \
+           generate_index_for_model(model_class, index, sphinx_params)
+
 
 def generate_index_for_model(model_class, index=None, sphinx_params={}):
     """Generates a source configmration for a model."""
@@ -116,12 +129,13 @@ def generate_index_for_model(model_class, index=None, sphinx_params={}):
     
     return t.render(c)
 
+
 def generate_source_for_model(model_class, index=None, sphinx_params={}):
     """Generates a source configmration for a model."""
     t = _get_template('source.conf')
 
     def _the_tuple(f):
-        return (f.__class__, f.column, getattr(f.rel, 'to', None), f.choices)
+        return f.__class__, f.column, getattr(f.rel, 'to', None), f.choices
 
     valid_fields = [_the_tuple(f) for f in model_class._meta.fields if _is_sourcable_field(f)]
     
@@ -140,15 +154,17 @@ def generate_source_for_model(model_class, index=None, sphinx_params={}):
     c = Context(params)
     
     return t.render(c)
-    
-# Generate for multiple models (search UNIONs)
 
+
+# Generate for multiple models (search UNIONs)
 def generate_config_for_models(model_classes, index=None, sphinx_params={}):
     """
     Generates a sample configuration including an index and source for
     the given model which includes all attributes and date fields.
     """
-    return generate_source_for_models(model_classes, index, sphinx_params) + "\n\n" + generate_index_for_models(model_classes, index, sphinx_params)
+    return generate_source_for_models(model_classes, index, sphinx_params) + "\n\n" +\
+           generate_index_for_models(model_classes, index, sphinx_params)
+
 
 def generate_index_for_models(model_classes, index=None, sphinx_params={}):
     """Generates a source configmration for a model."""
@@ -164,6 +180,7 @@ def generate_index_for_models(model_classes, index=None, sphinx_params={}):
     
     return t.render(c)
 
+
 def generate_source_for_models(model_classes, index=None, sphinx_params={}):
     """Generates a source configmration for a model."""
     t = _get_template('source-multiple.conf')
@@ -171,7 +188,7 @@ def generate_source_for_models(model_classes, index=None, sphinx_params={}):
     # We need to loop through each model and find only the fields that exist *exactly* the
     # same across models.
     def _the_tuple(f):
-        return (f.__class__, f.column, getattr(f.rel, 'to', None), f.choices)
+        return f.__class__, f.column, getattr(f.rel, 'to', None), f.choices
     
     valid_fields = [_the_tuple(f) for f in model_classes[0]._meta.fields if _is_sourcable_field(f)]
     for model_class in model_classes[1:]:
