@@ -785,7 +785,7 @@ class SphinxClient:
 
         assert (isinstance(docs, list))
         assert (isinstance(index, str))
-        assert (isinstance(words, str))
+        assert (isinstance(words, unicode))
         assert (isinstance(opts, dict))
 
         sock = self._Connect()
@@ -867,7 +867,7 @@ class SphinxClient:
         for doc in docs:
             if isinstance(doc, str):
                 doc = doc.decode('utf-8')
-            assert (isinstance(doc, str))
+            assert (isinstance(doc, unicode))
             req.append(pack('>L', len(doc)))
             req.append(doc)
 
