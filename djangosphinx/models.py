@@ -679,7 +679,7 @@ class SphinxQuerySet(object):
         passages = {}
         c = 0
         for f in fields:
-            passages[f] = passages_list[c]
+            passages[f] = passages_list[c].decode('utf8')
             c += 1
         return passages
 
