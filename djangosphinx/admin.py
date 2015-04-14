@@ -9,7 +9,7 @@ class SphinxModelAdmin(ModelAdmin):
     search_fields = ['pk']
     actions = None
     
-    def queryset(self, request):
+    def get_queryset(self, request):
         return SphinxQuerySet(
             model=self.model,
             index=self.index,
