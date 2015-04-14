@@ -19,7 +19,7 @@ class SphinxModelAdmin(ModelAdmin):
         return SphinxChangeList
 
 class SphinxChangeList(ChangeList):
-    def get_query_set(self):
+    def get_queryset(self):
         qs = self.root_query_set
         lookup_params = self.params.copy() # a dictionary of the query string
         for i in (ALL_VAR, ORDER_VAR, ORDER_TYPE_VAR, SEARCH_VAR, IS_POPUP_VAR):

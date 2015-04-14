@@ -281,7 +281,7 @@ class SphinxQuerySet(object):
         kwargs = dict([('_%s' % (key,), value) for key, value in kwargs.iteritems() if key in self.available_kwargs])
         return kwargs
 
-    def get_query_set(self, model):
+    def get_queryset(self, model):
         qs = model._default_manager
         if self.using:
             qs = qs.db_manager(self.using)
@@ -572,7 +572,7 @@ class SphinxQuerySet(object):
             
         if self.model:
             if results['matches']:
-                queryset = self.get_query_set(self.model)
+                queryset = self.get_queryset(self.model)
                 if self._select_related:
                     queryset = queryset.select_related(*self._select_related_fields, **self._select_related_args)
                 if self._extra:
@@ -628,9 +628,9 @@ class SphinxQuerySet(object):
                                 objcache[ct][r['id']] = r['id'] = val
                     
                         q = reduce(operator.or_, [reduce(operator.and_, [Q(**{p.name: r['attrs'][p.column]}) for p in pks]) for r in results['matches'] if r['attrs']['content_type'] == ct])
-                        queryset = self.get_query_set(model_class).filter(q)
+                        queryset = self.get_queryset(model_class).filter(q)
                     else:
-                        queryset = self.get_query_set(model_class).filter(pk__in=[r['id'] for r in results['matches'] if r['attrs']['content_type'] == ct])
+                        queryset = self.get_queryset(model_class).filter(pk__in=[r['id'] for r in results['matches'] if r['attrs']['content_type'] == ct])
 
                     for o in queryset:
                         objcache[ct][', '.join([unicode(getattr(o, p.name)) for p in pks])] = o
@@ -693,29 +693,29 @@ class SphinxModelManager(object):
         self._index = kwargs.pop('index', model._meta.db_table)
         self._kwargs = kwargs
     
-    def _get_query_set(self):
+    def _get_queryset(self):
         return SphinxQuerySet(self.model, index=self._index, **self._kwargs)
     
     def get_index(self):
         return self._index
     
     def all(self):
-        return self._get_query_set()
+        return self._get_queryset()
     
     def none(self):
-        return self._get_query_set().none()
+        return self._get_queryset().none()
     
     def filter(self, **kwargs):
-        return self._get_query_set().filter(**kwargs)
+        return self._get_queryset().filter(**kwargs)
     
     def query(self, *args, **kwargs):
-        return self._get_query_set().query(*args, **kwargs)
+        return self._get_queryset().query(*args, **kwargs)
 
     def on_index(self, *args, **kwargs):
-        return self._get_query_set().on_index(*args, **kwargs)
+        return self._get_queryset().on_index(*args, **kwargs)
 
     def geoanchor(self, *args, **kwargs):
-        return self._get_query_set().geoanchor(*args, **kwargs)
+        return self._get_queryset().geoanchor(*args, **kwargs)
 
 class SphinxInstanceManager(object):
     """Collection of tools useful for objects which are in a Sphinx index."""
@@ -753,7 +753,7 @@ class SphinxSearch(object):
             return SphinxInstanceManager(instance, self._index)
         return self._sphinx
     
-    def get_query_set(self):
+    def get_queryset(self):
         """Override this method to change the QuerySet used for config generation."""
         return self.model._default_manager.all()
     
@@ -822,7 +822,7 @@ class SphinxRelation(SphinxSearch):
                     ids.append(value)
                 else:
                     ids.extend()
-            qs = self.get_query_set(self.model).filter(pk__in=set(ids))
+            qs = self.get_queryset(self.model).filter(pk__in=set(ids))
             if self._select_related:
                 qs = qs.select_related(*self._select_related_fields,
                                        **self._select_related_args)
